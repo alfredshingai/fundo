@@ -1,0 +1,15 @@
+# Render Blueprint — deploys Fundo as a free web service straight from this repo.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: fundo
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      # Shared password that locks the app (any username + this password unlocks it).
+      # sync: false = Render prompts you to enter it securely at deploy time.
+      - key: PASSWORD
+        sync: false

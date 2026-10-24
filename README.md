@@ -34,6 +34,30 @@ health endpoints.
 The server binds to `127.0.0.1` by default. Set `HOST=0.0.0.0` when deploying to
 a platform that requires a public bind, and `PORT` to change the port.
 
+## Deploy it (free)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/alfredshingai/fundo)
+
+Fundo ships with a `Dockerfile` and a Render Blueprint, so a free instance on
+[Render](https://render.com) is one click away:
+
+1. Click the button above (or in Render: **New → Blueprint** and pick this repo).
+2. When prompted for `PASSWORD`, set a strong password — this locks your instance
+   behind a login prompt (any username + that password). **Never deploy without
+   one**: a public instance with no password would expose your documents and AI key.
+3. Deploy. Render auto-redeploys on every push to `main`.
+
+Free-tier reality check (as of 2026): the instance spins down after ~15 minutes
+idle, so the first visit after a break takes ~30–60s to wake; and the filesystem
+is **ephemeral** — uploads, XP and settings reset when the service restarts or
+redeploys. Use the export buttons to keep your study material. For always-on,
+persistent storage you'd need a paid disk or a small VPS (e.g. Oracle Cloud's
+free tier).
+
+Any Docker host works the same way (Fly.io, Koyeb, HF Spaces, a VPS). The two
+required settings are `HOST=0.0.0.0` and `PASSWORD=<your password>`; the port is
+read from `PORT`.
+
 ## First-time setup
 
 1. Open **AI Settings**.

@@ -1,5 +1,6 @@
 import { join, extname, relative, isAbsolute } from "node:path";
 import { readFileSync, existsSync, statSync } from "node:fs";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { apiGet, apiPost } from "./api.ts";
 import { setSetting, getSetting } from "./store.ts";
 import { PROVIDER_PRESETS } from "./ai.ts";
@@ -9,6 +10,9 @@ const PORT = Number(Deno.env.get("PORT") || 3000) || 3000;
 // Local-first app: only listen on loopback unless HOST is set (e.g. HOST=0.0.0.0
 // when deploying to a platform that needs a public bind).
 const HOST = Deno.env.get("HOST") || "127.0.0.1";
+// Optional shared-password gate for public deployments. Unset = open (local use).
+// When set, every request except /health needs Basic Auth (any username).
+const PASSWORD = Deno.env.get("PASSWORD") || Deno.env.get("FUNDO_PASSWORD") || "";
 const ROOT = join(import.meta.dirname ?? ".", "..");
 const PUBLIC = join(ROOT, "public");
 
@@ -76,6 +80,13 @@ function inside(base: string, filePath: string): boolean {
   return !!rel && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
+/** Constant-time string comparison (hashed first to equalize lengths). */
+function safeEqual(a: string, b: string): boolean {
+  const ha = createHash("sha256").update(a).digest();
+  const hb = createHash("sha256").update(b).digest();
+  return timingSafeEqual(ha, hb);
+}
+
 function serveStatic(url: URL): Response {
   try {
     // Vendored libs served straight from node_modules (e.g. KaTeX css/js/fonts)
@@ -104,10 +115,32 @@ function serveStatic(url: URL): Response {
   }
 }
 
+/** Check the Basic Auth header against PASSWORD (any username is accepted). */
+function authorized(req: Request): boolean {
+  const header = req.headers.get("authorization") ?? "";
+  const m = /^Basic\s+(.+)$/i.exec(header.trim());
+  if (!m) return false;
+  let decoded = "";
+  try {
+    decoded = atob(m[1]);
+  } catch {
+    return false;
+  }
+  const colon = decoded.indexOf(":");
+  const pass = colon === -1 ? "" : decoded.slice(colon + 1);
+  return safeEqual(pass, PASSWORD);
+}
+
 Deno.serve({ port: PORT, hostname: HOST }, async (req) => {
   const url = new URL(req.url);
-  if (url.pathname.startsWith("/api/")) return await handleApi(req, url);
   if (url.pathname === "/health") return new Response("ok");
+  if (PASSWORD && !authorized(req)) {
+    return new Response("Authentication required.", {
+      status: 401,
+      headers: { "WWW-Authenticate": 'Basic realm="Fundo", charset="UTF-8"' },
+    });
+  }
+  if (url.pathname.startsWith("/api/")) return await handleApi(req, url);
   return serveStatic(url);
 });
 
@@ -119,4 +152,5 @@ console.log(`
   Data:  ${Deno.env.get("HOME") ?? "~"}/.fundo  (SQLite DB + uploads + extracted text)
   First step: open Settings and add an API key
   (OpenCode Zen / OpenRouter free models, OpenAI, Claude, Gemini, Ollama...).
-`);
+${PASSWORD ? "" : HOST === "127.0.0.1" ? "" :
+"\n  ⚠️  WARNING: listening publicly with no PASSWORD set — anyone who finds\n  this URL can read your documents and use your AI key. Set the PASSWORD\n  environment variable to lock the app.\n"}`);
