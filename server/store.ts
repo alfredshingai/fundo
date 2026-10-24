@@ -1,18 +1,46 @@
 import { DatabaseSync } from "node:sqlite";
 import { homedir } from "node:os";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, renameSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 // --- storage locations -------------------------------------------------
-const dataDir = join(homedir(), ".studyforge");
-mkdirSync(dataDir, { recursive: true });
+// Fundo stores everything in ~/.fundo. Databases created before the rebrand
+// lived in ~/.studyforge — rename them once on first launch (if files are
+// locked by an old server instance, keep using the legacy location).
+const FRESH_DIR = join(homedir(), ".fundo");
+const LEGACY_DIR = join(homedir(), ".studyforge");
+
+let dataDir = FRESH_DIR;
+if (!existsSync(FRESH_DIR) && existsSync(LEGACY_DIR)) {
+  try {
+    renameSync(LEGACY_DIR, FRESH_DIR);
+  } catch {
+    dataDir = LEGACY_DIR;
+  }
+}
+if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
 mkdirSync(join(dataDir, "uploads"), { recursive: true });
 mkdirSync(join(dataDir, "extracted"), { recursive: true });
+
+function pickDbPath(dir: string): string {
+  const fresh = join(dir, "fundo.db");
+  const legacy = join(dir, "studyforge.db");
+  if (existsSync(fresh) || !existsSync(legacy)) return fresh;
+  try {
+    renameSync(legacy, fresh);
+    for (const suffix of ["-wal", "-shm"]) {
+      if (existsSync(legacy + suffix)) renameSync(legacy + suffix, fresh + suffix);
+    }
+    return fresh;
+  } catch {
+    return legacy;
+  }
+}
 
 export const DATA_DIR = dataDir;
 export const UPLOADS_DIR = join(dataDir, "uploads");
 export const EXTRACTED_DIR = join(dataDir, "extracted");
-export const DB_PATH = join(dataDir, "studyforge.db");
+export const DB_PATH = pickDbPath(dataDir);
 
 export const db = new DatabaseSync(DB_PATH);
 
@@ -87,8 +115,9 @@ CREATE TABLE IF NOT EXISTS progress (
 INSERT OR IGNORE INTO progress (id, xp) VALUES (1, 0);
 
 -- Migration: older databases have an attempts table whose CHECK constraint
--- lacks 'course_final'. SQLite can't alter CHECK constraints, so recreate.
--- (Invalid row data is impossible: kind values were only quiz/review before.)
+-- lacks 'course_final'. SQLite can't alter CHECK constraints, so recreate —
+-- but only when the existing table actually lacks the value (guarded in TS,
+-- otherwise this would drop and rebuild the table on every startup).
 CREATE TABLE IF NOT EXISTS attempts_new (
   id TEXT PRIMARY KEY,
   document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -98,12 +127,25 @@ CREATE TABLE IF NOT EXISTS attempts_new (
   xp_earned INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-INSERT INTO attempts_new
-  SELECT id, document_id, kind, score, total, xp_earned, created_at FROM attempts
-  WHERE kind IN ('quiz', 'review', 'course_final');
-DROP TABLE attempts;
-ALTER TABLE attempts_new RENAME TO attempts;
+`);
 
+// run the attempts migration only when the stored schema is outdated
+const attemptsSql = (
+  db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'attempts'").get() as
+    | { sql: string }
+    | undefined
+)?.sql ?? "";
+if (attemptsSql && !attemptsSql.includes("course_final")) {
+  db.exec(`
+    INSERT INTO attempts_new
+      SELECT id, document_id, kind, score, total, xp_earned, created_at FROM attempts
+      WHERE kind IN ('quiz', 'review', 'course_final');
+    DROP TABLE attempts;
+    ALTER TABLE attempts_new RENAME TO attempts;
+  `);
+}
+
+db.exec(`
 CREATE TABLE IF NOT EXISTS courses (
   id TEXT PRIMARY KEY,
   document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,

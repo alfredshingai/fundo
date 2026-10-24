@@ -1,11 +1,14 @@
-import { join, extname } from "node:path";
-import { readFileSync, existsSync } from "node:fs";
+import { join, extname, relative, isAbsolute } from "node:path";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { apiGet, apiPost } from "./api.ts";
 import { setSetting, getSetting } from "./store.ts";
 import { PROVIDER_PRESETS } from "./ai.ts";
 import "katex"; // side-effect import: ensures node_modules/katex exists for static /vendor/katex serving
 
 const PORT = Number(Deno.env.get("PORT") || 3000) || 3000;
+// Local-first app: only listen on loopback unless HOST is set (e.g. HOST=0.0.0.0
+// when deploying to a platform that needs a public bind).
+const HOST = Deno.env.get("HOST") || "127.0.0.1";
 const ROOT = join(import.meta.dirname ?? ".", "..");
 const PUBLIC = join(ROOT, "public");
 
@@ -61,32 +64,47 @@ async function handleApi(req: Request, url: URL): Promise<Response> {
     return json({ error: `Not found: ${req.method} /api/${path}` }, 404);
   } catch (e) {
     console.error(`[api] ${req.method} /api/${path} failed:`, e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 400);
+    const msg = e instanceof Error ? e.message : String(e);
+    const status = /not found/i.test(msg) ? 404 : 500;
+    return json({ error: msg }, status);
   }
+}
+
+/** True when `filePath` resolves inside `base` — blocks ../ traversal. */
+function inside(base: string, filePath: string): boolean {
+  const rel = relative(base, filePath);
+  return !!rel && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
 function serveStatic(url: URL): Response {
-  // Vendored libs served straight from node_modules (e.g. KaTeX css/js/fonts)
-  if (url.pathname.startsWith("/vendor/")) {
-    const rel = url.pathname.slice("/vendor/".length);
-    if (rel.includes("..") || rel.includes("\\")) return new Response("Not found", { status: 404 });
-    const vendorPath = join(ROOT, "node_modules", rel);
-    if (!existsSync(vendorPath)) return new Response("Not found", { status: 404 });
-    const vType = MIME[extname(vendorPath)] ?? "application/octet-stream";
-    return new Response(readFileSync(vendorPath), { headers: { "Content-Type": vType, "Cache-Control": "no-cache" } });
+  try {
+    // Vendored libs served straight from node_modules (e.g. KaTeX css/js/fonts)
+    if (url.pathname.startsWith("/vendor/")) {
+      const rel = url.pathname.slice("/vendor/".length);
+      const vendorPath = join(ROOT, "node_modules", rel);
+      if (!inside(join(ROOT, "node_modules"), vendorPath) || !existsSync(vendorPath)) {
+        return new Response("Not found", { status: 404 });
+      }
+      if (statSync(vendorPath).isDirectory()) return new Response("Not found", { status: 404 });
+      const vType = MIME[extname(vendorPath)] ?? "application/octet-stream";
+      return new Response(readFileSync(vendorPath), { headers: { "Content-Type": vType, "Cache-Control": "no-cache" } });
+    }
+    let file = url.pathname === "/" ? "/index.html" : url.pathname;
+    // SPA-ish fallback for clean routes
+    if (!existsSync(join(PUBLIC, file)) && !extname(file)) file = "/index.html";
+    const filePath = join(PUBLIC, file);
+    if (!inside(PUBLIC, filePath) || !existsSync(filePath)) return new Response("Not found", { status: 404 });
+    if (statSync(filePath).isDirectory()) return new Response("Not found", { status: 404 });
+    const type = MIME[extname(filePath)] ?? "application/octet-stream";
+    return new Response(readFileSync(filePath), {
+      headers: { "Content-Type": type, "Cache-Control": "no-cache" },
+    });
+  } catch {
+    return new Response("Not found", { status: 404 });
   }
-  let file = url.pathname === "/" ? "/index.html" : url.pathname;
-  // SPA-ish fallback for clean routes
-  if (!existsSync(join(PUBLIC, file)) && !extname(file)) file = "/index.html";
-  const filePath = join(PUBLIC, file);
-  if (!existsSync(filePath)) return new Response("Not found", { status: 404 });
-  const type = MIME[extname(filePath)] ?? "application/octet-stream";
-  return new Response(readFileSync(filePath), {
-    headers: { "Content-Type": type, "Cache-Control": "no-cache" },
-  });
 }
 
-Deno.serve({ port: PORT }, async (req) => {
+Deno.serve({ port: PORT, hostname: HOST }, async (req) => {
   const url = new URL(req.url);
   if (url.pathname.startsWith("/api/")) return await handleApi(req, url);
   if (url.pathname === "/health") return new Response("ok");
@@ -94,11 +112,11 @@ Deno.serve({ port: PORT }, async (req) => {
 });
 
 console.log(`
-  StudyForge is running!
-  ──────────────────────
+  Fundo is running!
+  ─────────────────
   Open  http://localhost:${PORT}  in your browser.
 
-  Data:  ~/.studyforge
+  Data:  ${Deno.env.get("HOME") ?? "~"}/.fundo  (SQLite DB + uploads + extracted text)
   First step: open Settings and add an API key
   (OpenCode Zen / OpenRouter free models, OpenAI, Claude, Gemini, Ollama...).
 `);

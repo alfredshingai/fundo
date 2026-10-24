@@ -109,7 +109,7 @@ async function callOpenAiCompatible(
   if (cfg.apiKey) headers["Authorization"] = `Bearer ${cfg.apiKey}`;
   if (cfg.providerId === "openrouter") {
     headers["HTTP-Referer"] = "http://localhost:3000";
-    headers["X-Title"] = "StudyForge";
+    headers["X-Title"] = "Fundo";
   }
 
   const body: Record<string, unknown> = {
@@ -231,7 +231,7 @@ export type GeneratedStudySet = {
   quiz: { question: string; options: string[]; correctIndex: number; explanation?: string }[];
 };
 
-const SYSTEM_PROMPT = `You are StudyForge, an expert study-material generator. You read source text extracted from a document and produce study material. You must be accurate and NEVER invent facts that are not supported by the source. Always respond with a single valid JSON object and nothing else — no markdown fences, no commentary.`;
+const SYSTEM_PROMPT = `You are Fundo, an expert study-material generator. You read source text extracted from a document and produce study material. You must be accurate and NEVER invent facts that are not supported by the source. Always respond with a single valid JSON object and nothing else — no markdown fences, no commentary.`;
 
 const FORMAT_RULES = `FORMATTING (important — the app renders markdown and LaTeX):
 - Write ALL mathematics in LaTeX. Inline math: \\( ... \\). Display equations on their own line: \\[ ... \\]. Example: \\( \\hat{y} = \\hat{\\beta}_0 + \\hat{\\beta}_1 x \\)
@@ -384,7 +384,7 @@ export type GeneratedMCQ = {
   explanation?: string;
 };
 
-const OUTLINE_SYSTEM = `You are StudyForge, an expert course designer. You transform source material into a structured, multi-section interactive course. You must be accurate and NEVER invent facts not supported by the source — though you MAY add standard introductory framing, motivation, and transitions that help a learner understand why the material matters. Always respond with a single valid JSON object and nothing else — no markdown fences, no commentary.`;
+const OUTLINE_SYSTEM = `You are Fundo, an expert course designer. You transform source material into a structured, multi-section interactive course. You must be accurate and NEVER invent facts not supported by the source — though you MAY add standard introductory framing, motivation, and transitions that help a learner understand why the material matters. Always respond with a single valid JSON object and nothing else — no markdown fences, no commentary.`;
 
 const OUTLINE_PROMPT = (sourceTitle: string, source: string) => `Read the study material below and design a complete course outline in the style of a well-structured interactive lecture course (like a great online course: motivating intro, logical progression from foundations to advanced material, one section per coherent topic).
 
@@ -470,7 +470,7 @@ export async function generateCourseOutline(sourceTitle: string, source: string)
   return { title, intro, coverage, sections, warmup: mcq(obj.warmup), final: mcq(obj.final) };
 }
 
-const SECTION_SYSTEM = `You are StudyForge, an expert lecturer writing one section of a structured course. Write clear, engaging, textbook-quality teaching prose directly to the learner ('you'). Stay faithful to the source material — explain, motivate, and connect ideas, but never invent facts, formulas, or claims not supported by the source. Respond with a single valid JSON object and nothing else.`;
+const SECTION_SYSTEM = `You are Fundo, an expert lecturer writing one section of a structured course. Write clear, engaging, textbook-quality teaching prose directly to the learner ('you'). Stay faithful to the source material — explain, motivate, and connect ideas, but never invent facts, formulas, or claims not supported by the source. Respond with a single valid JSON object and nothing else.`;
 
 const SECTION_PROMPT = (courseTitle: string, sectionTitle: string, sectionSummary: string, source: string, prevTitle?: string) => `You are writing ONE section of the course "${courseTitle}".${prevTitle ? ` The previous section was "${prevTitle}" — build on it without repeating it.` : " This is the opening section — start by orienting the learner."}
 

@@ -22,7 +22,7 @@ export function rejectReason(filename: string): string | null {
   if (isSupported(filename)) return null;
   const media = [".mp4", ".mov", ".mkv", ".avi", ".webm", ".mp3", ".wav", ".m4a", ".ogg", ".flac", ".aac"];
   if (media.includes(ext)) {
-    return `"${ext}" is a media file. StudyForge only accepts PDF, DOCX, TXT and MD — no video or audio.`;
+    return `"${ext}" is a media file. Fundo only accepts PDF, DOCX, TXT and MD — no video or audio.`;
   }
   return `"${ext}" files are not supported. Only PDF, DOCX, TXT and MD.`;
 }
@@ -139,7 +139,7 @@ async function extractPdf(buf: Uint8Array): Promise<{ text: string; pages: numbe
     return {
       text: "",
       pages: numPages,
-      error: "No text layer found in this PDF (it may be scanned images, which need OCR that StudyForge does not include).",
+      error: "No text layer found in this PDF (it may be scanned images, which need OCR that Fundo does not include).",
     };
   }
   return { text, pages: doc.numPages };

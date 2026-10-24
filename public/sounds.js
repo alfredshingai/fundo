@@ -1,4 +1,4 @@
-// StudyForge sounds — tiny WebAudio synth, no audio files needed.
+// Fundo sounds — tiny WebAudio synth, no audio files needed.
 // Reward SFX + flashcard read-aloud via the browser SpeechSynthesis API.
 
 let ctx = null;
@@ -23,7 +23,13 @@ function tone(freq, start, dur, type = "sine", gain = 0.12) {
   o.stop(a.currentTime + start + dur + 0.05);
 }
 
-export const sfx = {
+// Settings → "Reward sounds" toggle (default on). Every SFX goes through the
+// gated wrapper below so the switch actually mutes the app.
+function sfxEnabled() {
+  try { return localStorage.getItem("sf-sfx") !== "off"; } catch { return true; }
+}
+
+const rawSfx = {
   correct() {
     tone(523.25, 0, .12, "sine", .10);   // C5
     tone(659.25, .08, .14, "sine", .10); // E5
@@ -55,6 +61,13 @@ export const sfx = {
     tone(600, 0, .03, "triangle", .04);
   },
 };
+
+export const sfx = Object.fromEntries(
+  Object.entries(rawSfx).map(([name, fn]) => [
+    name,
+    (...args) => { if (sfxEnabled()) fn(...args); },
+  ]),
+);
 
 // --- speech (reads flashcards aloud — reading only, never explanations) -----
 

@@ -120,7 +120,7 @@ export const apiGet: Api = {
 export const apiPost: Api = {
   "test-ai": async () => {
     const reply = await chat(
-      [{ role: "user", content: "Reply with exactly: StudyForge AI connected" }],
+      [{ role: "user", content: "Reply with exactly: Fundo AI connected" }],
       { maxTokens: 400, temperature: 0 },
     );
     return { ok: true, reply: reply.trim().slice(0, 120) };
@@ -130,6 +130,9 @@ export const apiPost: Api = {
     const form = await req.formData();
     const file = form.get("file");
     if (!(file instanceof File)) throw new Error("No file received.");
+
+    const MAX_BYTES = 30 * 1024 * 1024; // 30 MB — must match the client-side check
+    if (file.size > MAX_BYTES) throw new Error("File too large (max 30 MB).");
 
     const name = file.name || "untitled";
     const reason = rejectReason(name);

@@ -1,8 +1,15 @@
+# Fundo launcher - restarts the server detached and pings the health endpoints.
+# Runs from anywhere: all paths are relative to this script's folder.
+$dir = $PSScriptRoot
+Set-Location $dir
+
 Get-Process deno -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
-$deno = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links\deno.exe"
-$dir = Join-Path $env:USERPROFILE "Desktop\studyforge"
+# Prefer deno on PATH; fall back to the WinGet install location.
+$deno = "deno"
+$winget = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links\deno.exe"
+if (-not (Get-Command deno -ErrorAction SilentlyContinue) -and (Test-Path $winget)) { $deno = $winget }
 
 # Launch fully detached via WMI so it outlives this shell
 $cmd = "cmd /c cd /d `"$dir`" && `"$deno`" task dev > server.log 2> server.err.log"
