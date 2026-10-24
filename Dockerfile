@@ -3,10 +3,10 @@ FROM denoland/deno:2.6.6
 WORKDIR /app
 
 # Copy dependency manifests + server first so Docker caches the dependency
-# layer across builds
+# layer across builds. deno cache takes no permission flags (unlike deno run).
 COPY deno.jsonc deno.lock ./
 COPY server/ server/
-RUN deno cache -A server/main.ts
+RUN deno cache server/main.ts
 
 COPY . .
 
