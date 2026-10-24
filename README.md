@@ -1,5 +1,12 @@
 # Fundo 🎓
 
+**Fundo** is a **100% free and open source** AI-powered learning platform. No subscriptions,
+no locked features, no ads, no tracking — now and forever. The project is actively developed
+and **looking for contributors and collaborators** of every kind: code, design, docs, ideas,
+translations, testing. Jump in — see [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+
+![License](https://img.shields.io/badge/license-MIT-green) ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen) ![Deno](https://img.shields.io/badge/runtime-Deno%202-black)
+
 Turn your **PDF, DOCX, TXT and MD** files into study notes, flashcards and quizzes —
 with **XP, levels, daily streaks, reward sounds and flashcard read-aloud**.
 
@@ -75,10 +82,23 @@ fundo/
 └── start-server.ps1 # Windows detached launcher
 ```
 
-## Contributing
+## Contributing — collaborators wanted 🤝
 
-PRs are welcome! Keep dependencies minimal, keep the app local-first and private,
-and match the existing vanilla JS / TypeScript style (no frameworks by design).
+Fundo is an independent open source project, and it grows faster with help. Whether
+you write code, design UI, write docs, translate, or just test things and file good
+bug reports — you're welcome here.
+
+**Areas where help is most needed right now:**
+- 📄 OCR support for scanned/image-only PDFs
+- 🔌 More AI providers and better model defaults
+- 🌍 Translations / internationalization
+- 🎨 UI polish, themes (light mode), accessibility
+- 🧪 Tests and CI
+- 📖 Documentation and tutorials
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup and guidelines — the whole
+app runs with two commands and zero paid services. If you'd like to collaborate
+long-term (features, roadmap, maintaining), open an issue or a discussion and say hi.
 
 ## Notes & limits
 
