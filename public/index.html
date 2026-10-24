@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StudyForge — turn documents into study material</title>
+  <link rel="stylesheet" href="/vendor/katex/dist/katex.min.css" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E⚒️%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="brand">
+        <span class="brand-icon">⚒️</span>
+        <span class="brand-name">StudyForge</span>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-route="dashboard">🏠 Dashboard</button>
+        <button class="nav-btn" data-route="upload">⬆️ Upload</button>
+        <button class="nav-btn" data-route="documents">📚 My Documents</button>
+        <button class="nav-btn" data-route="settings">⚙️ AI Settings</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="level-card">
+          <div class="level-row">
+            <span id="hud-level" class="level-badge">Lv 1</span>
+            <span id="hud-xp">0 XP</span>
+          </div>
+          <div class="xp-bar"><div id="hud-xp-fill" class="xp-fill" style="width:0%"></div></div>
+          <div id="hud-streak" class="streak-line">🔥 Streak: 0 days</div>
+        </div>
+      </div>
+    </aside>
+
+    <main id="main"></main>
+  </div>
+
+  <!-- overlays -->
+  <div id="toast-root"></div>
+  <div id="confetti-root"></div>
+  <div id="modal-root"></div>
+
+  <script defer src="/vendor/katex/dist/katex.min.js"></script>
+  <script defer src="/vendor/katex/dist/contrib/mhchem.min.js"></script>
+  <script defer src="/vendor/katex/dist/contrib/mathtex-script-type.min.js"></script>
+  <script defer src="/vendor/katex/dist/contrib/copy-tex.min.js"></script>
+  <script defer src="/vendor/katex/dist/contrib/auto-render.min.js"></script>
+  <script type="module" src="/app.js?v=11"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "nodeModulesDir": "auto",
+  "imports": {
+    "katex": "npm:katex@0.16.21"
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "tasks": {
+    "dev": "deno run -A server/main.ts",
+    "check": "deno check server/main.ts"
+  }
+}
